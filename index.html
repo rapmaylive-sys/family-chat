@@ -1,80 +1,41 @@
+<!-- ... existing code ... -->
+<!-- Замените всё содержимое на этот код -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FamilyConnect</title>
+    <title>FamilyConnect Secure</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0a0a0a; font-family: 'Inter', sans-serif; }
-        .message-bubble { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-    </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="bg-[#0a0a0a] flex items-center justify-center min-h-screen">
+    
+    <div id="authScreen" class="text-center">
+        <button id="loginBtn" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold">Войти через Google</button>
+    </div>
 
-    <div class="w-full max-w-sm bg-[#121212] border border-white/10 rounded-3xl p-5 shadow-2xl h-[80vh] flex flex-col backdrop-blur-xl">
-        <!-- Заголовок -->
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-lg font-semibold text-white tracking-tight">FamilyConnect</h1>
-            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        </div>
-
-        <!-- Поле имени -->
-        <input id="nameInput" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm mb-4 placeholder:text-white/20 focus:outline-none focus:border-indigo-500" placeholder="Ваше имя...">
-
-        <!-- Чат -->
-        <div id="chatBox" class="flex-1 overflow-y-auto space-y-4 mb-4 scrollbar-hide"></div>
-
-        <!-- Поле ввода -->
-        <div class="flex gap-2 p-1 bg-black rounded-2xl border border-white/5">
-            <input id="msgInput" type="text" class="w-full bg-transparent px-4 py-3 text-white focus:outline-none placeholder:text-white/20" placeholder="Написать семье...">
-            <button onclick="sendMessage()" class="bg-indigo-600 hover:bg-indigo-500 text-white p-3 rounded-xl transition-all hover:scale-105 active:scale-95">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-            </button>
-        </div>
+    <div id="chatApp" class="hidden w-full max-w-sm bg-[#121212] border border-white/10 rounded-3xl p-5 shadow-2xl h-[80vh] flex flex-col">
+        <!-- ... (ваш текущий чат внутри) ... -->
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, query, limitToLast } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDZ82pn4M8CX_2ySPBXjDBscfZVpS7mo_o",
-            authDomain: "familyconnect-f3026.firebaseapp.com",
-            databaseURL: "https://familyconnect-f3026-default-rtdb.firebaseio.com",
-            projectId: "familyconnect-f3026",
-            storageBucket: "familyconnect-f3026.appspot.com",
-            messagingSenderId: "586629397170",
-            appId: "1:586629397170:web:b03c6fe2a85a93fcfda7ab"
-        };
-
+        const firebaseConfig = { /* Вставьте ваш конфиг сюда */ };
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const chatRef = ref(db, 'messages');
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
 
-        window.sendMessage = () => {
-            const msgInput = document.getElementById('msgInput');
-            const nameInput = document.getElementById('nameInput');
-            if(!msgInput.value.trim()) return;
-            push(chatRef, { 
-                text: msgInput.value, 
-                name: nameInput.value || 'Гость',
-                time: Date.now() 
-            });
-            msgInput.value = '';
-        };
+        document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
 
-        onChildAdded(query(chatRef, limitToLast(50)), (snap) => {
-            const data = snap.val();
-            const chatBox = document.getElementById('chatBox');
-            const div = document.createElement('div');
-            div.className = "message-bubble bg-white/5 p-3 rounded-2xl border border-white/5 shadow-lg max-w-[85%]";
-            div.innerHTML = `<p class="text-[10px] text-indigo-400 font-bold mb-1">${data.name}</p>
-                             <p class="text-white/90 text-sm">${data.text}</p>`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+        onAuthStateChanged(auth, (user) => {
+            if(user) {
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('chatApp').classList.remove('hidden');
+                // Запуск логики чата...
+            }
         });
     </script>
 </body>
