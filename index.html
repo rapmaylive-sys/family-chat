@@ -8,104 +8,80 @@
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
-    <!-- Экран критической ошибки (если забыли вставить конфиг) -->
-    <div id="configErrorScreen" class="hidden w-full max-w-md bg-red-900/50 border border-red-500 p-6 rounded-2xl shadow-xl text-center">
-        <h2 class="text-2xl font-bold mb-4 text-red-400">Стоп! 🛑</h2>
-        <p class="mb-4">Вы забыли вставить данные вашего Firebase в код, либо пропустили параметр <b>databaseURL</b>.</p>
-        <p class="text-sm text-gray-300">Откройте код файла <code>index.html</code> и заполните переменную <code>firebaseConfig</code> вашими реальными данными из консоли Firebase.</p>
-    </div>
-
     <!-- Экран входа -->
-    <div id="loginScreen" class="w-full max-w-sm bg-gray-800 p-8 rounded-2xl shadow-xl text-center hidden">
+    <div id="loginScreen" class="w-full max-w-sm bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
         <h1 class="text-2xl font-bold mb-6 text-blue-400">FamilyConnect</h1>
         <input type="password" id="passInput" placeholder="Введите пароль" 
                class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500 text-white">
         <button id="loginBtn" class="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">Войти</button>
-        <p id="errorMsg" class="mt-4 text-red-400 text-sm hidden">Неверный пароль!</p>
     </div>
 
     <!-- Основной чат -->
     <div id="chatContainer" class="hidden w-full max-w-lg bg-gray-800 p-6 rounded-2xl shadow-xl">
         <h2 class="text-xl font-bold mb-4 text-blue-400">Семейный чат</h2>
-        <div id="messages" class="h-64 overflow-y-auto mb-4 border-b border-gray-700 pb-2 space-y-2 pr-2"></div>
+        <div id="messages" class="h-64 overflow-y-auto mb-4 border-b border-gray-700 pb-2 space-y-2"></div>
         <div class="flex gap-2">
-            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-            <button id="sendBtn" class="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">Отправить</button>
+            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700 focus:outline-none text-white">
+            <button id="sendBtn" class="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">></button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, query, limitToLast } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // ВНИМАНИЕ! ЗАМЕНИТЕ ЭТИ ЗНАЧЕНИЯ НА СВОИ!
+        // Ваш рабочий конфиг
         const firebaseConfig = {
-            apiKey: "ВСТАВЬТЕ_ВАШ_API_KEY",
-            authDomain: "ВСТАВЬТЕ_ВАШ_PROJECT_ID.firebaseapp.com",
-            databaseURL: "ВСТАВЬТЕ_ССЫЛКУ_НА_БАЗУ_ИЗ_КОНСОЛИ", // ОЧЕНЬ ВАЖНО! Начинается с https://
-            projectId: "ВСТАВЬТЕ_ВАШ_PROJECT_ID",
-            storageBucket: "ВСТАВЬТЕ_ВАШ_PROJECT_ID.appspot.com",
-            messagingSenderId: "ВСТАВЬТЕ_ВАШ_SENDER_ID",
-            appId: "ВСТАВЬТЕ_ВАШ_APP_ID"
+            apiKey: "AIzaSyDZ82pn4M8CX_2ySPBXjDBscfZVpS7mo_o",
+            authDomain: "familyconnect-f3026.firebaseapp.com",
+            databaseURL: "https://familyconnect-f3026-default-rtdb.firebaseio.com",
+            projectId: "familyconnect-f3026",
+            storageBucket: "familyconnect-f3026.firebasestorage.app",
+            messagingSenderId: "586629397170",
+            appId: "1:586629397170:web:2560475f7b9c1315fda7ab"
         };
 
-        const isConfigEmpty = !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("ВСТАВЬТЕ") || !firebaseConfig.databaseURL || firebaseConfig.databaseURL.includes("ВСТАВЬТЕ");
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app, firebaseConfig.databaseURL);
+        const messagesRef = ref(db, 'messages');
 
-        if (isConfigEmpty) {
-            document.getElementById('configErrorScreen').classList.remove('hidden');
-        } else {
-            // Если конфиг заполнен, показываем экран логина и запускаем Firebase
-            document.getElementById('loginScreen').classList.remove('hidden');
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                // Явно передаем databaseURL, чтобы избежать вашей ошибки
-                const db = getDatabase(app, firebaseConfig.databaseURL); 
-                const messagesRef = ref(db, 'messages');
-
-                document.getElementById('loginBtn').addEventListener('click', () => {
-                    const pass = document.getElementById('passInput').value.trim();
-                    if (pass === "pipiki") {
-                        document.getElementById('loginScreen').classList.add('hidden');
-                        document.getElementById('chatContainer').classList.remove('hidden');
-                        document.getElementById('errorMsg').classList.add('hidden');
-                    } else {
-                        document.getElementById('errorMsg').classList.remove('hidden');
-                    }
-                });
-
-                const sendMessage = () => {
-                    const input = document.getElementById('msgInput');
-                    if (input.value.trim() !== "") {
-                        push(messagesRef, { 
-                            text: input.value.trim(), 
-                            timestamp: Date.now() 
-                        });
-                        input.value = "";
-                    }
-                };
-
-                document.getElementById('sendBtn').onclick = sendMessage;
-                document.getElementById('msgInput').onkeypress = (e) => { 
-                    if(e.key === 'Enter') sendMessage(); 
-                };
-
-                onChildAdded(query(messagesRef, limitToLast(50)), (data) => {
-                    const msg = data.val();
-                    const msgsDiv = document.getElementById('messages');
-                    
-                    const div = document.createElement('div');
-                    div.className = "p-3 bg-gray-700 rounded-xl text-sm animate-fade-in";
-                    const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    div.innerHTML = `<span class="text-blue-300 text-xs mr-2">[${time}]</span>${msg.text}`;
-                    
-                    msgsDiv.appendChild(div);
-                    msgsDiv.scrollTop = msgsDiv.scrollHeight;
-                });
-            } catch (error) {
-                console.error("Ошибка при работе Firebase:", error);
+        // Логика пароля
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            if (document.getElementById('passInput').value.trim() === "pipiki") {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('chatContainer').classList.remove('hidden');
+            } else {
+                alert("Неверный пароль!");
             }
-        }
+        });
+
+        // Отправка сообщений
+        document.getElementById('sendBtn').onclick = () => {
+            const input = document.getElementById('msgInput');
+            if (input.value.trim() !== "") {
+                push(messagesRef, { text: input.value, time: Date.now() });
+                input.value = "";
+            }
+        };
+
+        // Загрузка сообщений
+        onChildAdded(messagesRef, (data) => {
+            const msg = data.val();
+            const div = document.createElement('div');
+            div.className = "p-2 bg-gray-700 rounded-lg text-sm";
+            div.textContent = msg.text;
+            const msgsDiv = document.getElementById('messages');
+            msgsDiv.appendChild(div);
+            msgsDiv.scrollTop = msgsDiv.scrollHeight;
+        });
     </script>
 </body>
 </html>
+```eof
+
+### Последний шаг:
+1. Замените код в файле `index.html` на этот.
+2. Сохраните и загрузите на GitHub.
+3. Обязательно убедитесь, что в **Realtime Database -> Rules** стоят права `.read: true` и `.write: true`.
+
+Теперь всё должно заработать! Если вдруг появится новая ошибка в консоли — скопируйте её мне, и мы сразу её поправим. Удачи! :)
