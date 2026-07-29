@@ -6,17 +6,17 @@
     <title>FamilyConnect Secure</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-[#0a0a0a] flex items-center justify-center min-h-screen text-white font-sans">
+<body class="bg-[#0a0a0a] min-h-screen text-white font-sans flex items-center justify-center p-4">
 
     <!-- Экран входа -->
     <div id="loginScreen" class="text-center p-8 bg-[#121212] rounded-3xl border border-white/10 shadow-2xl">
-        <h1 class="text-2xl font-bold mb-6">Добро пожаловать в FamilyConnect</h1>
+        <h1 class="text-2xl font-bold mb-6">FamilyConnect</h1>
         <button id="loginBtn" class="bg-indigo-600 hover:bg-indigo-700 transition px-8 py-3 rounded-xl font-bold">
             Войти через Google
         </button>
     </div>
 
-    <!-- Чат (скрыт по умолчанию) -->
+    <!-- Чат (скрыт) -->
     <div id="chatApp" class="hidden w-full max-w-sm bg-[#121212] border border-white/10 rounded-3xl p-5 shadow-2xl h-[80vh] flex flex-col">
         <div id="messages" class="flex-1 overflow-y-auto mb-4 space-y-3"></div>
         <div class="flex gap-2">
@@ -27,14 +27,13 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, getRedirectResult, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        /* СКОПИРУЙТЕ ЭТОТ БЛОК ИЗ CONSOLE.FIREBASE.GOOGLE.COM */
         const firebaseConfig = {
-            apiKey: "ВАШ_API_KEY_ОТ_FIREBASE", 
+            apiKey: "ВАШ_API_KEY",
             authDomain: "ВАШ_ПРОЕКТ.firebaseapp.com",
-            databaseURL: "https://ВАШ_ПРОЕКТ-default-rtdb.firebaseio.com",
+            databaseURL: "https://ВАШ_ПРОЕКТ.firebaseio.com",
             projectId: "ВАШ_ПРОЕКТ",
             storageBucket: "ВАШ_ПРОЕКТ.appspot.com",
             messagingSenderId: "ВАШ_ID",
@@ -46,14 +45,17 @@
         const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
 
-        document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
+        // Обработка логина через редирект
+        document.getElementById('loginBtn').onclick = () => signInWithRedirect(auth, provider);
+
+        // Проверка результата после возврата на страницу
+        getRedirectResult(auth).catch((error) => console.error(error));
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('chatApp').classList.remove('hidden');
                 
-                // Слушаем сообщения
                 const messagesRef = ref(db, 'messages');
                 onChildAdded(messagesRef, (data) => {
                     const msg = data.val();
