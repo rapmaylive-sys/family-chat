@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FamilyConnect - Вход</title>
+    <title>FamilyConnect</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
 
     <!-- Экран входа -->
     <div id="loginScreen" class="w-full max-w-sm bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
-        <h1 class="text-2xl font-bold mb-6">FamilyConnect</h1>
+        <h1 class="text-2xl font-bold mb-6 text-blue-400">FamilyConnect</h1>
         <input type="password" id="passInput" placeholder="Введите пароль" 
                class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500">
-        <button onclick="checkAccess()" class="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition">Войти</button>
+        <button onclick="checkAccess()" class="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">Войти</button>
     </div>
 
-    <!-- Основной чат (скрыт по умолчанию) -->
+    <!-- Основной чат -->
     <div id="chatContainer" class="hidden w-full max-w-lg bg-gray-800 p-6 rounded-2xl shadow-xl">
-        <h2 class="text-xl font-bold mb-4">Семейный чат</h2>
-        <div id="messages" class="h-64 overflow-y-auto mb-4 border-b border-gray-700 pb-2"></div>
+        <h2 class="text-xl font-bold mb-4 text-blue-400">Семейный чат</h2>
+        <div id="messages" class="h-64 overflow-y-auto mb-4 border-b border-gray-700 pb-2 space-y-2"></div>
         <div class="flex gap-2">
-            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700">
-            <button id="sendBtn" class="px-4 py-2 bg-blue-600 rounded-lg">Отправить</button>
+            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700 focus:outline-none">
+            <button id="sendBtn" class="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">></button>
         </div>
     </div>
 
@@ -30,15 +30,21 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
+        // ВСТАВЬ СЮДА СВОЙ КОНФИГ ИЗ КОНСОЛИ FIREBASE
         const firebaseConfig = {
-            // Вставьте сюда ваш конфиг из консоли Firebase
+            // apiKey: "...",
+            // authDomain: "...",
+            // databaseURL: "...",
+            // projectId: "...",
+            // storageBucket: "...",
+            // messagingSenderId: "...",
+            // appId: "..."
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const messagesRef = ref(db, 'messages');
 
-        // Логика пароля
         window.checkAccess = () => {
             const pass = document.getElementById('passInput').value;
             if (pass === "пипики") {
@@ -49,10 +55,9 @@
             }
         };
 
-        // Логика чата
         document.getElementById('sendBtn').onclick = () => {
             const input = document.getElementById('msgInput');
-            if (input.value) {
+            if (input.value.trim() !== "") {
                 push(messagesRef, { text: input.value, time: Date.now() });
                 input.value = "";
             }
@@ -61,10 +66,11 @@
         onChildAdded(messagesRef, (data) => {
             const msg = data.val();
             const div = document.createElement('div');
-            div.className = "mb-2 p-2 bg-gray-700 rounded-lg";
+            div.className = "p-2 bg-gray-700 rounded-lg text-sm";
             div.textContent = msg.text;
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+            const msgsDiv = document.getElementById('messages');
+            msgsDiv.appendChild(div);
+            msgsDiv.scrollTop = msgsDiv.scrollHeight;
         });
     </script>
 </body>
