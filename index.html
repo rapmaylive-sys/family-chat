@@ -12,8 +12,8 @@
     <div id="loginScreen" class="w-full max-w-sm bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
         <h1 class="text-2xl font-bold mb-6 text-blue-400">FamilyConnect</h1>
         <input type="password" id="passInput" placeholder="Введите пароль" 
-               class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500">
-        <button onclick="checkAccess()" class="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">Войти</button>
+               class="w-full p-3 mb-4 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500 text-white">
+        <button id="loginBtn" class="w-full py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">Войти</button>
     </div>
 
     <!-- Основной чат -->
@@ -21,7 +21,7 @@
         <h2 class="text-xl font-bold mb-4 text-blue-400">Семейный чат</h2>
         <div id="messages" class="h-64 overflow-y-auto mb-4 border-b border-gray-700 pb-2 space-y-2"></div>
         <div class="flex gap-2">
-            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700 focus:outline-none">
+            <input type="text" id="msgInput" placeholder="Ваше сообщение..." class="flex-1 p-2 rounded-lg bg-gray-700 focus:outline-none text-white">
             <button id="sendBtn" class="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition font-bold">></button>
         </div>
     </div>
@@ -30,31 +30,33 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
-        // ВСТАВЬ СЮДА СВОЙ КОНФИГ ИЗ КОНСОЛИ FIREBASE
+        // Вставьте ваши реальные данные сюда
         const firebaseConfig = {
-            // apiKey: "...",
-            // authDomain: "...",
-            // databaseURL: "...",
-            // projectId: "...",
-            // storageBucket: "...",
-            // messagingSenderId: "...",
-            // appId: "..."
+            apiKey: "ВАШ_API_KEY",
+            authDomain: "ВАШ_ПРОЕКТ.firebaseapp.com",
+            projectId: "ВАШ_ПРОЕКТ",
+            storageBucket: "ВАШ_ПРОЕКТ.appspot.com",
+            messagingSenderId: "ВАШ_ID",
+            appId: "ВАШ_APP_ID"
         };
+        const DB_URL = "https://ВАШ_ПРОЕКТ-default-rtdb.firebaseio.com";
 
         const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        const db = getDatabase(app, DB_URL);
         const messagesRef = ref(db, 'messages');
 
-        window.checkAccess = () => {
-            const pass = document.getElementById('passInput').value;
-            if (pass === "пипики") {
+        // Логика кнопки входа с паролем "pipiki"
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const pass = document.getElementById('passInput').value.trim();
+            if (pass === "pipiki") {
                 document.getElementById('loginScreen').classList.add('hidden');
                 document.getElementById('chatContainer').classList.remove('hidden');
             } else {
                 alert("Неверный пароль!");
             }
-        };
+        });
 
+        // Отправка
         document.getElementById('sendBtn').onclick = () => {
             const input = document.getElementById('msgInput');
             if (input.value.trim() !== "") {
@@ -63,6 +65,7 @@
             }
         };
 
+        // Получение
         onChildAdded(messagesRef, (data) => {
             const msg = data.val();
             const div = document.createElement('div');
@@ -75,3 +78,6 @@
     </script>
 </body>
 </html>
+```eof
+
+Теперь просто обновите файл на GitHub, и все должно работать идеально. Пароль `pipiki` (латиницей, без пробелов) откроет доступ к чату. Удачи! :)
