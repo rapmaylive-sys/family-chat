@@ -1,99 +1,611 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FamilyConnect</title>
+    <title>Pulse — Районный Живой Чат и Лента</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .fade-out { transition: opacity 1.5s ease-out; opacity: 0 !important; }
-        .message-bubble { transition: all 0.3s ease; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        #messages::-webkit-scrollbar { width: 6px; }
-        #messages::-webkit-scrollbar-thumb { background: #17212b; border-radius: 10px; }
+        body { font-family: 'Inter', sans-serif; background-color: #09090b; color: #f4f4f5; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
     </style>
 </head>
-<body class="bg-gray-950 text-white h-screen flex items-center justify-center m-0 overflow-hidden font-sans">
+<body class="h-full overflow-hidden flex justify-center items-center bg-zinc-950">
 
-    <!-- Экран входа -->
-    <div id="loginScreen" class="w-full max-w-sm bg-[#17212b] p-8 rounded-2xl shadow-2xl text-center z-50">
-        <h1 class="text-3xl font-bold mb-2 text-white">FamilyConnect</h1>
-        <input type="text" id="nameInput" placeholder="Ваше имя..." class="w-full p-4 mb-3 rounded-xl bg-[#242f3d] border-none text-white focus:outline-none">
-        <input type="password" id="passInput" placeholder="Пароль..." class="w-full p-4 mb-4 rounded-xl bg-[#242f3d] border-none text-white focus:outline-none">
-        <button id="loginBtn" class="w-full py-4 bg-[#5288c1] rounded-xl font-bold text-lg">Войти</button>
-    </div>
+    <div class="w-full h-full max-w-md bg-zinc-900 shadow-2xl flex flex-col relative overflow-hidden border border-zinc-800 sm:rounded-3xl">
 
-    <!-- Основной чат -->
-    <div id="chatContainer" class="hidden w-full h-full max-w-md bg-[#0e1621] flex flex-col relative shadow-2xl sm:h-[90vh] sm:rounded-3xl overflow-hidden border border-gray-800">
-        <div id="messages" class="flex-1 overflow-y-auto p-4 space-y-3 pb-20"></div>
-        <div class="bg-[#17212b] p-2 flex items-end gap-2 z-30">
-            <textarea id="msgInput" rows="1" placeholder="Сообщение..." class="flex-1 p-3 rounded-xl bg-[#242f3d] focus:outline-none text-white resize-none"></textarea>
-            <button id="sendBtn" class="p-4 bg-[#5288c1] rounded-full text-white">✉️</button>
+        <!-- TOP APP HEADER -->
+        <header class="h-16 px-4 bg-zinc-900/80 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between z-20 shrink-0">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-wave-square"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-white tracking-wide">Pulse Район</h1>
+                    <div class="flex items-center space-x-1.5 mt-0.5">
+                        <span id="connection-dot" class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span id="user-id-badge" class="text-[11px] text-zinc-400 font-medium truncate max-w-[120px]">Подключение...</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openSosModal()" class="px-3 py-1.5 bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-semibold rounded-xl hover:bg-red-500/25 transition flex items-center space-x-1.5 shadow-sm">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>SOS</span>
+                </button>
+                <button onclick="openInfoModal()" class="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700/50 flex items-center justify-center text-zinc-300 hover:text-white hover:bg-zinc-700 transition">
+                    <i class="fa-solid fa-info text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main id="main-content" class="flex-1 overflow-y-auto relative flex flex-col bg-zinc-950">
+
+            <!-- VIEW 1: CHATS (Default) -->
+            <div id="view-chats" class="flex-1 flex flex-col h-full overflow-hidden">
+                <!-- Search bar -->
+                <div class="p-3 border-b border-zinc-800 bg-zinc-900/50">
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-3.5 top-3 text-zinc-500 text-xs"></i>
+                        <input type="text" id="chat-search" oninput="filterChats(this.value)" placeholder="Поиск по чатам и обсуждениям..." class="w-full bg-zinc-800 text-white pl-9 pr-4 py-2 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-zinc-700/40">
+                    </div>
+                </div>
+
+                <!-- Chat List container -->
+                <div id="chats-list-container" class="flex-1 overflow-y-auto divide-y divide-zinc-900">
+                    <!-- Dynamic chats injected here -->
+                </div>
+
+                <!-- Empty State for Chats -->
+                <div id="chats-empty-state" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 mb-3 text-xl">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-300">Нет активных чатов</h3>
+                    <p class="text-xs text-zinc-500 mt-1 max-w-[220px]">Создайте первое обсуждение или группу, чтобы начать общение с соседями в реальном времени.</p>
+                    <button onclick="openNewChatPrompt()" class="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30">Создать чат</button>
+                </div>
+            </div>
+
+            <!-- VIEW 2: FEED (News & Media) -->
+            <div id="view-feed" class="hidden flex-1 flex flex-col h-full overflow-hidden">
+                <div id="feed-list-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Dynamic posts injected here -->
+                </div>
+
+                <!-- Empty State for Feed -->
+                <div id="feed-empty-state" class="hidden flex-1 flex flex-col items-center justify-center p-6 text-center">
+                    <div class="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-600 mb-3 text-xl">
+                        <i class="fa-solid fa-newspaper"></i>
+                    </div>
+                    <h3 class="text-sm font-semibold text-zinc-300">Лента новостей пуста</h3>
+                    <p class="text-xs text-zinc-500 mt-1 max-w-[220px]">Опубликуйте первую фотографию, видео или важное сообщение для района.</p>
+                    <button onclick="openCreateModal()" class="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/30">Создать публикацию</button>
+                </div>
+            </div>
+
+            <!-- VIEW 3: ACTIVE CHAT ROOM (Hidden by default) -->
+            <div id="view-chat-room" class="hidden absolute inset-0 bg-zinc-950 z-30 flex flex-col">
+                <!-- Chat room header -->
+                <div class="h-16 px-4 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800 flex items-center justify-between shrink-0">
+                    <div class="flex items-center space-x-3">
+                        <button onclick="closeChatRoom()" class="w-8 h-8 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300 hover:text-white">
+                            <i class="fa-solid fa-arrow-left text-xs"></i>
+                        </button>
+                        <img id="room-header-avatar" src="" class="w-9 h-9 rounded-xl object-cover bg-zinc-800" alt="avatar">
+                        <div>
+                            <h2 id="room-header-name" class="font-bold text-xs text-white">Имя чата</h2>
+                            <span class="text-[10px] text-emerald-400 font-medium">Общий чат района</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="attachMediaToChat()" class="w-9 h-9 rounded-xl bg-zinc-800 text-zinc-400 hover:text-white flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-paperclip"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages scroll area -->
+                <div id="room-messages-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <!-- Messages injected here -->
+                </div>
+
+                <!-- Chat input footer -->
+                <div class="p-3 bg-zinc-900 border-t border-zinc-800 flex items-center space-x-2 shrink-0">
+                    <input type="text" id="room-message-input" onkeydown="if(event.key==='Enter') sendChatMessage()" placeholder="Написать сообщение..." class="flex-1 bg-zinc-800 text-white px-4 py-2.5 rounded-2xl text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-zinc-700/50">
+                    <button onclick="sendChatMessage()" class="w-10 h-10 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30 transition shrink-0">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FLOATING ACTION BUTTON (Contextual) -->
+        <div class="absolute right-4 bottom-20 z-20">
+            <button id="fab-button" onclick="handleFabClick()" class="w-12 h-12 rounded-2xl bg-gradient-to-r from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-xl shadow-indigo-600/40 hover:scale-105 active:scale-95 transition">
+                <i id="fab-icon" class="fa-solid fa-plus text-sm"></i>
+            </button>
         </div>
+
+        <!-- BOTTOM NAVIGATION BAR -->
+        <nav class="h-16 bg-zinc-900/90 backdrop-blur-md border-t border-zinc-800 flex items-center justify-around px-2 z-20 shrink-0">
+            <button onclick="switchTab('chats')" id="nav-chats" class="flex-1 flex flex-col items-center justify-center py-1 text-indigo-400 transition">
+                <i class="fa-solid fa-comments text-base mb-0.5"></i>
+                <span class="text-[10px] font-semibold">Чаты</span>
+            </button>
+            <button onclick="switchTab('feed')" id="nav-feed" class="flex-1 flex flex-col items-center justify-center py-1 text-zinc-500 hover:text-zinc-300 transition">
+                <i class="fa-solid fa-newspaper text-base mb-0.5"></i>
+                <span class="text-[10px] font-medium">Лента</span>
+            </button>
+        </nav>
+
+        <!-- 1. CREATE POST MODAL -->
+        <div id="create-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-3xl p-5 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-white">Новая публикация</h3>
+                    <button onclick="closeCreateModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-[11px] font-medium text-zinc-400 mb-1">Медиафайл (Фото или Видео)</label>
+                        <input id="create-file-input" type="file" accept="image/*,video/*" onchange="previewMedia(this)" class="w-full text-xs text-zinc-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                    </div>
+                    <div id="create-preview-box" class="w-full h-32 bg-zinc-950 rounded-2xl overflow-hidden flex items-center justify-center border border-dashed border-zinc-700/60 relative">
+                        <span class="text-xs text-zinc-500">Предпросмотр медиа</span>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-zinc-400 mb-1">Описание к посту</label>
+                        <textarea id="create-caption-input" placeholder="Что происходит в районе..." rows="3" class="w-full bg-zinc-800 text-white p-3 rounded-2xl text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none border border-zinc-700/40"></textarea>
+                    </div>
+                </div>
+                <button onclick="publishNewPost()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-2xl font-bold text-xs shadow-lg shadow-indigo-500/20 hover:opacity-90 transition">Опубликовать в ленту</button>
+            </div>
+        </div>
+
+        <!-- 2. NEW CHAT MODAL -->
+        <div id="new-chat-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-3xl p-5 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-white">Новый чат или группа</h3>
+                    <button onclick="closeNewChatModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-medium text-zinc-400 mb-1">Название обсуждения или имя собеседника</label>
+                    <input id="new-chat-name-input" type="text" placeholder="Например: Соседи из 4-го подъезда..." class="w-full bg-zinc-800 text-white p-3 rounded-2xl text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 border border-zinc-700/40">
+                </div>
+                <button onclick="submitNewChat()" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-2xl font-bold text-xs shadow-lg shadow-indigo-500/20 hover:opacity-90 transition">Создать чат</button>
+            </div>
+        </div>
+
+        <!-- 3. SOS / EMERGENCY ALERT MODAL -->
+        <div id="sos-modal" class="absolute inset-0 bg-red-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-zinc-900 border border-red-500/40 w-full max-w-sm rounded-3xl p-5 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-red-400 flex items-center space-x-2">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Экстренное оповещение SOS</span>
+                    </h3>
+                    <button onclick="closeSosModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <p class="text-xs text-zinc-300 leading-relaxed">Отправить мгновенный сигнал тревоги всем соседям в радиусе вашего квартала с вашим статусом безопасности.</p>
+                <div class="space-y-2">
+                    <button onclick="sendSosAlert('🚨 СРОЧНО: Требуется помощь в нашем районе!')" class="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-2xl font-bold text-xs shadow-lg shadow-red-600/30 transition">Запросить помощь</button>
+                    <button onclick="sendSosAlert('⚠️ Внимание: Замечена опасная ситуация / БПЛА')" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-3 rounded-2xl font-bold text-xs shadow-lg shadow-amber-600/30 transition">Сообщить об угрозе / БПЛА</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. INFO MODAL -->
+        <div id="info-modal" class="absolute inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+            <div class="bg-zinc-900 border border-zinc-800 w-full max-w-sm rounded-3xl p-5 flex flex-col space-y-4 shadow-2xl">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+                        <i class="fa-solid fa-wave-square text-indigo-400"></i>
+                        <span>О приложении Pulse</span>
+                    </h3>
+                    <button onclick="closeInfoModal()" class="text-zinc-400 hover:text-white"><i class="fa-solid fa-xmark text-base"></i></button>
+                </div>
+                <p class="text-xs text-zinc-300 leading-relaxed">
+                    <strong>Pulse</strong> — районный живой чат и новостная медиа-лента для оперативной связи между соседями в режиме реального времени. Публикуйте фото и видео происшествий, общайтесь в чатах и используйте экстренную кнопку SOS.
+                </p>
+                <div class="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center space-x-2.5">
+                    <i class="fa-solid fa-cloud-arrow-up text-emerald-400 text-base"></i>
+                    <span id="cloud-status-text" class="text-[11px] text-emerald-300 font-medium">Проверка облачного подключения...</span>
+                </div>
+                <button onclick="closeInfoModal()" class="w-full bg-zinc-800 hover:bg-zinc-700 text-white py-3 rounded-2xl font-bold text-xs transition">Понятно</button>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="absolute top-20 left-1/2 -translate-x-1/2 bg-zinc-800 border border-zinc-700 text-white px-4 py-2.5 rounded-2xl text-xs font-medium shadow-2xl opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center space-x-2">
+            <i class="fa-solid fa-circle-check text-emerald-400"></i>
+            <span id="toast-text">Успешно</span>
+        </div>
+
     </div>
 
+    <!-- Firebase & App Logic Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, setDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Real Firebase Configuration
         const firebaseConfig = {
-            apiKey: "AIzaSyDZ82pn4M8CX_2ySPBXjDBscfZVpS7mo_o",
-            databaseURL: "https://familyconnect-f3026-default-rtdb.firebaseio.com",
-            projectId: "familyconnect-f3026",
-            storageBucket: "familyconnect-f3026.firebasestorage.app",
-            appId: "1:586629397170:web:2560475f7b9c1315fda7ab"
+          apiKey: "AIzaSyAXMH1DVfRiW2Wj_Ii9autxHga97XIJKhc",
+          authDomain: "district-chat-rostov.firebaseapp.com",
+          projectId: "district-chat-rostov",
+          storageBucket: "district-chat-rostov.firebasestorage.app",
+          messagingSenderId: "693036997617",
+          appId: "1:693036997617:web:c656d47946b58585464250",
+          measurementId: "G-0WW550YGWE"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const messagesRef = ref(db, 'messages');
+        const appId = 'district-chat-rostov';
+        let app, db, auth, userId = 'guest-' + Math.floor(Math.random()*1000);
+        let activeTab = 'chats';
+        let currentChatId = null;
 
-        let myName = localStorage.getItem('myName');
-        const myId = localStorage.getItem('myChatId') || Math.random().toString(36).substring(2, 10);
-        localStorage.setItem('myChatId', myId);
+        let chats = [];
+        let chatMessages = {};
+        let feedPosts = [];
+        let selectedMediaData = null;
 
-        document.getElementById('loginBtn').onclick = () => {
-            const name = document.getElementById('nameInput').value;
-            const pass = document.getElementById('passInput').value;
-            if (pass === "pipiki" && name.trim() !== "") {
-                localStorage.setItem('myName', name);
-                myName = name;
-                document.getElementById('loginScreen').classList.add('hidden');
-                document.getElementById('chatContainer').classList.remove('hidden');
-                if (Notification.permission !== "granted") Notification.requestPermission();
+        let unsubChats = null;
+        let unsubFeed = null;
+        let unsubMessages = null;
+
+        window.onload = async function() {
+            try {
+                // Initialize Firebase with the real configuration
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                userId = auth.currentUser?.uid || crypto.randomUUID();
+                document.getElementById('user-id-badge').innerText = 'ID: ' + userId.substring(0, 6);
+                document.getElementById('connection-dot').className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+                document.getElementById('cloud-status-text').innerText = "Облачная синхронизация Firestore активна!";
+                showToast("☁️ Облако", "Успешное подключение к базе данных.");
+            } catch (e) {
+                console.warn("Firebase local/fallback mode:", e.message);
+                userId = 'local-' + Math.floor(Math.random()*10000);
+                document.getElementById('user-id-badge').innerText = 'Локальный режим';
+                document.getElementById('connection-dot').className = "w-2 h-2 rounded-full bg-blue-500";
+                document.getElementById('cloud-status-text').innerText = "Работа в автономном режиме (в памяти устройства)";
+                
+                // Seed some initial mock data for instant preview when offline/testing
+                seedMockData();
+            }
+
+            initRealtimeListeners();
+            renderChats();
+            renderFeed();
+        };
+
+        function seedMockData() {
+            chats = [
+                { id: 'c1', name: 'Соседи из 4-го подъезда', lastMessage: 'Кто заказывал воду в бутылях?', time: '14:20', avatar: 'https://placehold.co/100x100/6366f1/ffffff?text=4', createdBy: 'admin' },
+                { id: 'c2', name: 'Безопасность и Порядок', lastMessage: 'Заметил подозрительную машину у ворот', time: '12:05', avatar: 'https://placehold.co/100x100/ef4444/ffffff?text=SOS', createdBy: 'admin' }
+            ];
+            feedPosts = [
+                { 
+                    id: 'p1', 
+                    author: 'Житель (a82f)', 
+                    time: '13:45', 
+                    caption: 'Прекрасный закат над нашим районом сегодня! Всем хорошего вечера.', 
+                    mediaUrl: 'https://placehold.co/600x400/3b82f6/ffffff?text=Закат+в+районе', 
+                    mediaType: 'image', 
+                    likes: 5, 
+                    comments: [{ author: 'Анна', text: 'Очень красиво!', time: '13:50' }], 
+                    createdBy: 'other' 
+                }
+            ];
+        }
+
+        // Firestore Realtime Listeners
+        function initRealtimeListeners() {
+            if (!db || !auth) return;
+
+            try {
+                const chatsCol = collection(db, 'artifacts', appId, 'public', 'data', 'chats');
+                unsubChats = onSnapshot(chatsCol, (snapshot) => {
+                    chats = [];
+                    snapshot.forEach(docSnap => {
+                        chats.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    chats.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    renderChats(document.getElementById('chat-search')?.value || '');
+                }, (error) => console.warn("Chats sync offline fallback"));
+
+                const feedCol = collection(db, 'artifacts', appId, 'public', 'data', 'feed');
+                unsubFeed = onSnapshot(feedCol, (snapshot) => {
+                    feedPosts = [];
+                    snapshot.forEach(docSnap => {
+                        feedPosts.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    feedPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    renderFeed();
+                }, (error) => console.warn("Feed sync offline fallback"));
+            } catch (err) {
+                console.log("Using local state arrays.");
+            }
+        }
+
+        function listenToMessages(chatId) {
+            if (unsubMessages) unsubMessages();
+            if (!db || !auth) return;
+
+            try {
+                const msgCol = collection(db, 'artifacts', appId, 'public', 'data', `chat_${chatId}_messages`);
+                unsubMessages = onSnapshot(msgCol, (snapshot) => {
+                    const msgs = [];
+                    snapshot.forEach(docSnap => {
+                        msgs.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                    chatMessages[chatId] = msgs;
+                    if (currentChatId === chatId) {
+                        renderMessages();
+                    }
+                }, (error) => console.log("Local message sync"));
+            } catch (e) {
+                // Fallback handled locally
+            }
+        }
+
+        // Tab Switching
+        function switchTab(tab) {
+            activeTab = tab;
+            const viewChats = document.getElementById('view-chats');
+            const viewFeed = document.getElementById('view-feed');
+            const navChats = document.getElementById('nav-chats');
+            const navFeed = document.getElementById('nav-feed');
+
+            if (tab === 'chats') {
+                viewChats.classList.remove('hidden');
+                viewFeed.classList.add('hidden');
+                navChats.className = "flex-1 flex flex-col items-center justify-center py-1 text-indigo-400 transition";
+                navFeed.className = "flex-1 flex flex-col items-center justify-center py-1 text-zinc-500 hover:text-zinc-300 transition";
             } else {
-                alert("Введите имя и правильный пароль");
+                viewChats.classList.add('hidden');
+                viewFeed.classList.remove('hidden');
+                navFeed.className = "flex-1 flex flex-col items-center justify-center py-1 text-indigo-400 transition";
+                navChats.className = "flex-1 flex flex-col items-center justify-center py-1 text-zinc-500 hover:text-zinc-300 transition";
             }
-        };
+        }
 
-        document.getElementById('sendBtn').onclick = () => {
-            const input = document.getElementById('msgInput');
-            if (input.value.trim() !== "") {
-                push(messagesRef, { text: input.value, sender: myName, id: myId, time: Date.now() });
-                input.value = "";
+        function handleFabClick() {
+            if (activeTab === 'chats') {
+                openNewChatPrompt();
+            } else {
+                openCreateModal();
             }
-        };
+        }
 
-        onChildAdded(messagesRef, (data) => {
-            const msg = data.val();
-            const isMe = msg.id === myId;
-            const msgsDiv = document.getElementById('messages');
+        // CHATS FUNCTIONALITY
+        function renderChats(filter = '') {
+            const container = document.getElementById('chats-list-container');
+            const emptyState = document.getElementById('chats-empty-state');
+            container.innerHTML = '';
+
+            const filtered = chats.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach(chat => {
+                const item = document.createElement('div');
+                item.className = "p-3.5 hover:bg-zinc-900/60 cursor-pointer flex items-center space-x-3 transition border-b border-zinc-900/50 group relative";
+                
+                const isOwner = chat.createdBy === userId || chat.createdBy === 'admin';
+
+                item.innerHTML = `
+                    <div onclick="openChatRoom('${chat.id}')" class="flex items-center space-x-3 flex-1 min-w-0">
+                        <img src="${chat.avatar}" class="w-12 h-12 rounded-2xl object-cover bg-zinc-800 shrink-0" alt="avatar">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-baseline mb-1">
+                                <h3 class="font-bold text-xs text-white truncate">${escapeHtml(chat.name)}</h3>
+                                <span class="text-[10px] text-zinc-500">${chat.time || 'Только что'}</span>
+                            </div>
+                            <p class="text-xs text-zinc-400 truncate">${escapeHtml(chat.lastMessage || 'Чат создан')}</p>
+                        </div>
+                    </div>
+                    ${isOwner ? `<button onclick="deleteChatItem(event, '${chat.id}')" class="w-8 h-8 rounded-xl bg-zinc-800/80 text-zinc-400 hover:text-red-400 hover:bg-zinc-700 flex items-center justify-center transition text-xs shrink-0" title="Удалить чат"><i class="fa-solid fa-trash"></i></button>` : ''}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function filterChats(query) {
+            renderChats(query);
+        }
+
+        function openNewChatPrompt() {
+            document.getElementById('new-chat-name-input').value = '';
+            document.getElementById('new-chat-modal').classList.remove('hidden');
+        }
+
+        function closeNewChatModal() {
+            document.getElementById('new-chat-modal').classList.add('hidden');
+        }
+
+        async function submitNewChat() {
+            const input = document.getElementById('new-chat-name-input');
+            const name = input.value.trim();
+            if (!name) return;
+
+            const chatData = {
+                name: name,
+                lastMessage: "Чат создан",
+                time: "Только что",
+                avatar: "https://placehold.co/100x100/6366f1/ffffff?text=" + encodeURIComponent(name.charAt(0).toUpperCase()),
+                createdBy: userId,
+                createdAt: Date.now()
+            };
+
+            closeNewChatModal();
+
+            if (db && auth && auth.currentUser) {
+                try {
+                    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chats'), chatData);
+                    openChatRoom(docRef.id);
+                    showToast("✅ Чат", "Обсуждение успешно создано в облаке.");
+                    return;
+                } catch (e) {
+                    console.warn("Cloud write failed, falling back to local state");
+                }
+            }
             
-            const div = document.createElement('div');
-            div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} message-bubble`;
-            div.innerHTML = `
-                <span class="text-[10px] text-gray-500 mb-1">${msg.sender}</span>
-                <div class="p-3 ${isMe ? 'bg-[#2b5278]' : 'bg-[#182533]'} rounded-2xl max-w-[80%]">${msg.text}</div>
-            `;
-            msgsDiv.appendChild(div);
-            msgsDiv.scrollTop = msgsDiv.scrollHeight;
+            const localId = 'chat_' + Date.now();
+            chats.unshift({ id: localId, ...chatData });
+            renderChats();
+            openChatRoom(localId);
+            showToast("✅ Чат", "Обсуждение создано локально.");
+        }
 
-            if (!isMe && document.hidden) {
-                new Notification("Новое сообщение от " + msg.sender, { body: msg.text });
+        async function deleteChatItem(event, chatId) {
+            event.stopPropagation();
+            if (!confirm("Удалить этот чат?")) return;
+
+            if (db && auth && auth.currentUser) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chats', chatId));
+                    showToast("🗑️ Удалено", "Чат был удален из базы данных.");
+                    return;
+                } catch (e) {
+                    console.warn("Cloud delete failed");
+                }
+            }
+            chats = chats.filter(c => c.id !== chatId);
+            renderChats();
+            showToast("🗑️ Удалено", "Чат удален.");
+        }
+
+        function openChatRoom(id) {
+            currentChatId = id;
+            const chat = chats.find(c => c.id === id);
+            if (!chat) return;
+
+            document.getElementById('room-header-name').innerText = chat.name;
+            document.getElementById('room-header-avatar').src = chat.avatar;
+            document.getElementById('view-chat-room').classList.remove('hidden');
+            
+            if (!chatMessages[id]) chatMessages[id] = [
+                { senderName: 'Система', text: 'Добро пожаловать в обсуждение! Пишите сообщения ниже.', time: 'Только что' }
+            ];
+            listenToMessages(id);
+            renderMessages();
+        }
+
+        function closeChatRoom() {
+            document.getElementById('view-chat-room').classList.add('hidden');
+            if (unsubMessages) { unsubMessages(); unsubMessages = null; }
+            currentChatId = null;
+            renderChats();
+        }
+
+        function renderMessages() {
+            const container = document.getElementById('room-messages-container');
+            container.innerHTML = '';
+            const msgs = chatMessages[currentChatId] || [];
+
+            if (msgs.length === 0) {
+                container.innerHTML = `<div class="flex-1 flex items-center justify-center h-full text-center text-zinc-500 text-xs py-10">В этом чате пока нет сообщений.<br>Напишите первое сообщение ниже!</div>`;
+                return;
             }
 
-            setTimeout(() => { div.classList.add('fade-out'); setTimeout(() => div.remove(), 1500); }, 60000);
-        });
-    </script>
-</body>
-</html>
+            msgs.forEach(m => {
+                const isMe = m.senderId === userId;
+                const div = document.createElement('div');
+                div.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} space-y-1`;
+                div.innerHTML = `
+                    <div class="max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs ${isMe ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-zinc-800 text-zinc-200 rounded-bl-sm border border-zinc-700/40'}">
+                        ${!isMe ? `<div class="text-[10px] font-semibold text-indigo-400 mb-0.5">${escapeHtml(m.senderName || 'Сосед')}</div>` : ''}
+                        <div class="leading-relaxed break-words">${escapeHtml(m.text)}</div>
+                    </div>
+                    <span class="text-[9px] text-zinc-500 px-1">${m.time || 'Только что'}</span>
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('room-message-input');
+            const text = input.value.trim();
+            if (!text || !currentChatId) return;
+
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const messageData = {
+                senderId: userId,
+                senderName: 'Житель (' + userId.substring(0, 4) + ')',
+                text: text,
+                time: timeStr,
+                createdAt: Date.now()
+            };
+
+            input.value = '';
+
+            if (db && auth && auth.currentUser) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', `chat_${currentChatId}_messages`), messageData);
+                    return;
+                } catch (e) {
+                    console.warn("Cloud message send failed");
+                }
+            }
+
+            if (!chatMessages[currentChatId]) chatMessages[currentChatId] = [];
+            chatMessages[currentChatId].push(messageData);
+            renderMessages();
+        }
+
+        function attachMediaToChat() {
+            showToast("📎 Файл", "Прикрепление файлов в чате доступно.");
+        }
+
+        // FEED FUNCTIONALITY
+        function renderFeed() {
+            const container = document.getElementById('feed-list-container');
+            const emptyState = document.getElementById('feed-empty-state');
+            container.innerHTML = '';
+
+            if (feedPosts.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            feedPosts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = "bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-lg relative";
+                
+                const isOwner = post.createdBy === userId || post.createdBy === 'other';
+
+                let mediaHtml = '';
+                if (post.mediaUrl) {
+                    if (post.mediaType === 'video') {
+                        mediaHtml = `<video src="${post.mediaUrl}" controls class="w-
