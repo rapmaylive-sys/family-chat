@@ -1,2 +1,2 @@
-# family-chat
-sos family-chat
+# Pulse
+sos сhat
